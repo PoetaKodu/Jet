@@ -4,6 +4,7 @@ module;
 #include <cinttypes>
 #include <utility>
 #include <optional>
+#include <functional>
 #include <array>
 #include <vector>
 #include <memory>
@@ -40,6 +41,9 @@ using Opt = std::optional<T>;
 
 template <typename... Ts>
 using Variant = std::variant<Ts...>;
+
+template <typename T>
+using Func = std::function<T>;
 
 template <typename T, std::size_t Extent = std::dynamic_extent>
 using Span = std::span<T, Extent>;

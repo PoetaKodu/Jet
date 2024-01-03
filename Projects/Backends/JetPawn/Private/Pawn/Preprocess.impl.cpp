@@ -127,9 +127,6 @@ auto extract_code(Path const& input_file) -> Result<CodeExtraction, CodeExtracti
     .jet_code  = String(),
   };
 
-  result.pawn_code.reserve(file_content.size());
-  result.jet_code.reserve(file_content.size());
-
   split_pawn_and_jet_code(file_content, result.pawn_code, result.jet_code);
 
   return success(std::move(result));
@@ -146,9 +143,15 @@ auto split_pawn_and_jet_code(StringView file_content, String& pawn_code, String&
     .in_jet_block = false,
   };
 
+  context.pawn_code.reserve(file_content.size());
+  context.jet_code.reserve(file_content.size());
+
   while (try_extract_next_source_line(context)) {
     // Nothing to do here.
   }
+
+  context.jet_code.shrink_to_fit();
+  context.pawn_code.shrink_to_fit();
 
   pawn_code = std::move(context.pawn_code);
   jet_code  = std::move(context.jet_code);

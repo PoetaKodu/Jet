@@ -10,11 +10,6 @@ using jet::parser::ModuleParse;
 export namespace jet::compiler
 {
 
-struct CompileError
-{
-  String details;
-};
-
-auto compile(ModuleParse parse_result, Settings settings) -> Result<int, CompileError>;
+auto compile(ModuleParse parse_result, Settings settings) -> CompileResult;
 
 } // namespace jet::compiler

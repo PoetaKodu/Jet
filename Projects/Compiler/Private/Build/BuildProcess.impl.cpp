@@ -62,7 +62,7 @@ auto begin_build(BuildState& state) -> BuildResult
     auto msg = fmt::format("module parse failed, details: {}", failed_parse->details);
     return error(BuildError{1, msg});
   }
-  auto compile_result = compile(maybe_parsed.get_unchecked(), state.settings);
+  auto compile_result = state.settings.compiler_backend(maybe_parsed.get_unchecked(), state.settings);
 
   if (auto err = compile_result.err()) {
     return error(BuildError{1, err->details});
