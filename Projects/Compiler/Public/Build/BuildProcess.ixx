@@ -22,18 +22,23 @@ struct BuildError
 
 using BuildResult = Result<std::monostate, BuildError>;
 
+struct BuildSettings {
+  Path root_module_path;
+  Func<CompilerBackendFn> compiler_backend;
+};
+
 /// Starts a build process, obtaining settings from the program arguments.
 ///
 /// @note The build state is not exposed. To get access to it, you have to
 /// construct it yourself and use @c begin_build() function.
 [[nodiscard]]
-auto run_build(ProgramArgs const& args) -> BuildResult;
+auto run_build(BuildSettings settings, ProgramArgs const& args) -> BuildResult;
 
 /// Starts a build process given a preconstructed build state.
 ///
 /// @note Calling this function is only valid if @c BuildState::can_start()
 /// evaluates to @c true.
 [[nodiscard]]
-auto begin_build(BuildState& build_state) -> BuildResult;
+auto begin_build(BuildSettings& settings, BuildState& build_state) -> BuildResult;
 
 } // namespace jet::compiler

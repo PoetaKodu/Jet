@@ -9,9 +9,9 @@ using jet::parser::ModuleParse;
 export namespace jet::compiler
 {
 
-struct Settings;
+struct CompilerSettings;
 
-auto make_settings_from_args(ProgramArgs const& args) -> Settings;
+auto make_compiler_settings_from_args(ProgramArgs const& args) -> CompilerSettings;
 
 struct CompileError
 {
@@ -20,14 +20,10 @@ struct CompileError
 
 using CompileResult = Result<int, CompileError>;
 
-using CompilerBackendFn = CompileResult(ModuleParse, Settings&);
+using CompilerBackendFn = CompileResult(ModuleParse, CompilerSettings&);
 
-struct Settings
+struct CompilerSettings
 {
-  // TODO: this should be optional.
-  String root_module_name;
-  Func<CompilerBackendFn> compiler_backend;
-
   struct Output
   {
     Opt<String> llvm_ir_file_name;

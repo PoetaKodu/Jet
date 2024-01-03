@@ -10,6 +10,6 @@ using jet::parser::ModuleParse;
 export namespace jet::compiler
 {
 
-auto compile(ModuleParse parse_result, Settings settings) -> CompileResult;
+auto compile(ModuleParse parse_result, CompilerSettings settings) -> CompileResult;
 
 } // namespace jet::compiler

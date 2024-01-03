@@ -12,6 +12,19 @@ import JetPawn.Pawn.Preprocess;
 
 using namespace jet::comp::foundation;
 
+using jet::compiler::CompileResult;
+using jet::compiler::CompileError;
+using jet::compiler::BuildSettings;
+using jet::compiler::CompilerSettings;
+
+using jet::parser::ModuleParse;
+
+auto compile(ModuleParse parse, CompilerSettings& settings) -> CompileResult {
+  return error(CompileError{
+    .details = "Transpiler not implemented",
+  });
+}
+
 auto main(int argc, char* argv[]) -> int
 {
   using jet::compiler::run_build;
@@ -36,14 +49,20 @@ auto main(int argc, char* argv[]) -> int
     return 1;
   }
 
-  auto preprocess_result = jp::run_pawn_preprocess(preprocess_settings.get_unchecked());
+  auto maybe_preprocessed = jp::run_pawn_preprocess(preprocess_settings.get_unchecked());
 
-  if (auto err = preprocess_result.err()) {
+  if (auto err = maybe_preprocessed.err()) {
     fmt::println(std::cerr, "Preprocessing failed, details:\n{}\n", err->details);
     return err->exit_code;
   }
 
-  auto build_result = run_build(args);
+  auto const& preprocess_result = maybe_preprocessed.get_unchecked();
+  auto build_settings = BuildSettings{
+    .root_module_path = preprocess_settings.get_unchecked().output.jet_file_path,
+    .compiler_backend = compile,
+  };
+
+  auto build_result = run_build(build_settings, args);
   if (auto err = build_result.err()) {
     fmt::println(std::cerr, "Compilation failed, details:\n{}\n", err->details);
     return err->exit_code;

@@ -12,7 +12,7 @@ export namespace jet::compiler
 /// for all build steps.
 struct BuildState
 {
-  Settings settings;
+  CompilerSettings settings;
 
   /// Determines whether it is valid to start a build process
   /// using this instance of build state.

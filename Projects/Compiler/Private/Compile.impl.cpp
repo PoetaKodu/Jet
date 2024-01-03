@@ -15,14 +15,14 @@ using LLVMGenError = String;
 namespace jet::compiler
 {
 
-static auto generate_llvm_ir(ModuleParse const& parse_result, Settings const& settings) -> Result<String, LLVMGenError>;
+static auto generate_llvm_ir(ModuleParse const& parse_result, CompilerSettings const& settings) -> Result<String, LLVMGenError>;
 static auto ensure_exists(Path const& directory_path) -> void;
-static auto cleanup_intermediate_directory(Settings const& settings) -> void;
-static auto determine_intermediate_directory(Settings const& settings) -> Path;
+static auto cleanup_intermediate_directory(CompilerSettings const& settings) -> void;
+static auto determine_intermediate_directory(CompilerSettings const& settings) -> Path;
 static auto generate_intermediate_content(Path const& dir_path, StringView content) -> void;
 static auto run_llvm_compilation(Path const& directory) -> void;
 
-auto compile(ModuleParse parse_result, Settings settings) -> Result<int, CompileError>
+auto compile(ModuleParse parse_result, CompilerSettings settings) -> Result<int, CompileError>
 {
   auto maybe_ir = generate_llvm_ir(parse_result, settings);
 
@@ -43,7 +43,7 @@ auto compile(ModuleParse parse_result, Settings settings) -> Result<int, Compile
   return success(0);
 }
 
-static auto generate_llvm_ir(ModuleParse const& parse_result, Settings const& settings) -> Result<String, LLVMGenError>
+static auto generate_llvm_ir(ModuleParse const& parse_result, CompilerSettings const& settings) -> Result<String, LLVMGenError>
 {
   // A sample program that prints "Hello, World from Jet".
   static auto constexpr MOCK_IR_CONTENT =
@@ -62,7 +62,7 @@ static auto generate_llvm_ir(ModuleParse const& parse_result, Settings const& se
 }
 
 
-static auto determine_intermediate_directory(Settings const& settings) -> Path
+static auto determine_intermediate_directory(CompilerSettings const& settings) -> Path
 {
   static auto constexpr DEFAULT_INTERMEDIATE_DIRECTORY = StringView(".jetc-intermediate");
   // TODO: make configurable.
@@ -79,7 +79,7 @@ static auto ensure_exists(Path const& directory_path) -> void
   fs::create_directories(directory_path);
 }
 
-static auto cleanup_intermediate_directory(Settings const& settings) -> void
+static auto cleanup_intermediate_directory(CompilerSettings const& settings) -> void
 {
   namespace fs = std::filesystem;
 

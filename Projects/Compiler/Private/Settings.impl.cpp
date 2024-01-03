@@ -8,10 +8,10 @@ module Jet.Compiler.Settings;
 
 namespace jet::compiler
 {
-static auto parse_output_binary(ProgramArgs const& args, Settings& settings) -> void;
-static auto parse_output_llvm_ir(ProgramArgs const& args, Settings& settings) -> void;
+static auto parse_output_binary(ProgramArgs const& args, CompilerSettings& settings) -> void;
+static auto parse_output_llvm_ir(ProgramArgs const& args, CompilerSettings& settings) -> void;
 
-auto make_settings_from_args(ProgramArgs const& args) -> Settings
+auto make_compiler_settings_from_args(ProgramArgs const& args) -> CompilerSettings
 {
   // Examples:
   //
@@ -32,9 +32,8 @@ auto make_settings_from_args(ProgramArgs const& args) -> Settings
   // a file of name "output_ir_name"
   // ---------------------
 
-  auto result             = Settings();
-  result.root_module_name = String(args.get_unchecked(1));
-
+  auto result             = CompilerSettings();
+  
   parse_output_binary(args, result);
   parse_output_llvm_ir(args, result);
 
@@ -43,23 +42,23 @@ auto make_settings_from_args(ProgramArgs const& args) -> Settings
   return result;
 }
 
-auto Settings::should_output_llvm_ir() const -> bool
+auto CompilerSettings::should_output_llvm_ir() const -> bool
 {
   return output.llvm_ir_file_name != std::nullopt;
 }
 
-auto Settings::should_output_binary() const -> bool
+auto CompilerSettings::should_output_binary() const -> bool
 {
   return output.binary_name != std::nullopt;
 }
 
-auto Settings::should_cleanup_intermediate() const -> bool
+auto CompilerSettings::should_cleanup_intermediate() const -> bool
 {
   return cleanup_intermediate;
 }
 
 
-static auto parse_output_binary(ProgramArgs const& args, Settings& settings) -> void
+static auto parse_output_binary(ProgramArgs const& args, CompilerSettings& settings) -> void
 {
   static auto constexpr MODULE_NAME_IDX = usize(1);
   assert(args.is_index_valid(MODULE_NAME_IDX) && "Compiler was unintentionally allowed to run without any arguments.");
@@ -70,7 +69,7 @@ static auto parse_output_binary(ProgramArgs const& args, Settings& settings) -> 
   settings.output.binary_name = String(binary_name);
 }
 
-static auto parse_output_llvm_ir(ProgramArgs const& args, Settings& settings) -> void
+static auto parse_output_llvm_ir(ProgramArgs const& args, CompilerSettings& settings) -> void
 {
   auto ir_name = args.sequence("--llvm-ir");
 

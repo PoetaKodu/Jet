@@ -15,7 +15,8 @@ import Jet.Comp.Format;
 
 namespace jet::compiler
 {
-auto run_build(ProgramArgs const& args) -> BuildResult
+
+auto run_build(BuildSettings settings, ProgramArgs const& args) -> BuildResult
 {
   static auto constexpr NOT_READY_ERROR = StringView(
     "build cannot be run with given setup - BuildState was not ready "
@@ -23,16 +24,16 @@ auto run_build(ProgramArgs const& args) -> BuildResult
   );
 
   auto build_state     = BuildState();
-  build_state.settings = make_settings_from_args(args);
+  build_state.settings = make_compiler_settings_from_args(args);
 
   if (!build_state.can_start()) {
     return error(BuildError{1, String(NOT_READY_ERROR)});
   }
 
-  return begin_build(build_state);
+  return begin_build(settings, build_state);
 }
 
-auto begin_build(BuildState& state) -> BuildResult
+auto begin_build(BuildSettings& settings, BuildState& state) -> BuildResult
 {
   namespace fmt = jet::comp::fmt;
   using core::read_file, core::find_module;
@@ -41,9 +42,9 @@ auto begin_build(BuildState& state) -> BuildResult
 
   assert(state.can_start() && "begin_build() called on a state that is not ready.");
 
-  auto& file_name = state.settings.root_module_name;
+  auto& file_path = settings.root_module_path;
 
-  auto module_path = find_module(Path(file_name));
+  auto module_path = find_module(file_path);
   if (!module_path) {
     return error(BuildError{1, "cannot find module file"});
   }
@@ -62,7 +63,7 @@ auto begin_build(BuildState& state) -> BuildResult
     auto msg = fmt::format("module parse failed, details: {}", failed_parse->details);
     return error(BuildError{1, msg});
   }
-  auto compile_result = state.settings.compiler_backend(maybe_parsed.get_unchecked(), state.settings);
+  auto compile_result = settings.compiler_backend(maybe_parsed.get_unchecked(), state.settings);
 
   if (auto err = compile_result.err()) {
     return error(BuildError{1, err->details});
