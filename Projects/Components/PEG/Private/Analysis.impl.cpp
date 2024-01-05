@@ -24,7 +24,8 @@ struct MatcherContext
     return rule.get_name(grammar.text_registry);
   }
 
-  auto begin_entry(StructuralView rule) -> ASTBuilder::EntryID {
+  auto begin_entry(StructuralView rule) -> ASTBuilder::EntryID
+  {
 #ifndef NDEBUG
     auto rule_name = this->get_rule_name(rule);
     return state.ast_builder.begin_entry(rule.get_ref(), state.current_pos(), rule_name);
@@ -38,6 +39,12 @@ struct ChildrenRange
 {
   usize      from = 0;
   Opt<usize> to;
+};
+
+struct RuleMatchOptions
+{
+  ChildrenRange children_range;
+  bool          force_skip_capture = false;
 };
 
 struct RuleMatchResult
@@ -54,10 +61,10 @@ static auto try_match_rule_ref(MatcherContext ctx, CustomRuleRef rule) -> RuleMa
 // Combinators
 
 /// Reusable combinator logic
-static auto try_match_combinator_must_base(MatcherContext ctx, StructuralView rule, ChildrenRange children_range)
+static auto try_match_combinator_must_base(MatcherContext ctx, StructuralView rule, RuleMatchOptions const& match_options)
   -> RuleMatchResult;
 
-static auto try_match_combinator_seq_base(MatcherContext ctx, StructuralView rule, ChildrenRange children_range)
+static auto try_match_combinator_seq_base(MatcherContext ctx, StructuralView rule, RuleMatchOptions const& match_options)
   -> RuleMatchResult;
 
 static auto try_match_combinator_must(MatcherContext ctx, StructuralView rule) -> RuleMatchResult;
@@ -75,7 +82,7 @@ auto ASTBuilder::begin_entry(CustomRuleRef rule_id, usize start_pos, StringView 
 {
   auto entry_id = this->begin_entry(rule_id, start_pos);
 
-  auto& entry = ast.entries.back();
+  auto& entry     = ast.entries.back();
   entry.rule_name = rule_name;
 
   return entry_id;
@@ -93,7 +100,7 @@ auto ASTBuilder::begin_entry(CustomRuleRef rule_id, usize start_pos) -> EntryID
     rule_id,
   });
 
-  auto& entry = ast.entries.back();
+  auto& entry     = ast.entries.back();
   entry.start_pos = start_pos;
   children_counter.push_back(0);
 
@@ -371,10 +378,10 @@ static auto try_match_rule_ref(MatcherContext ctx, CustomRuleRef rule) -> RuleMa
   return try_match_rule(ctx, view);
 }
 
-static auto try_match_combinator_must_base(MatcherContext ctx, StructuralView rule, ChildrenRange children_range)
+static auto try_match_combinator_must_base(MatcherContext ctx, StructuralView rule, RuleMatchOptions const& match_options)
   -> RuleMatchResult
 {
-  auto result = try_match_combinator_seq_base(ctx, rule, children_range);
+  auto result = try_match_combinator_seq_base(ctx, rule, match_options);
 
   if (!result.success) {
     ctx.state.failed_rule  = rule.get_ref();
@@ -391,18 +398,6 @@ static auto try_match_combinator_must(MatcherContext ctx, StructuralView rule) -
 
 static auto try_match_combinator_if_must(MatcherContext ctx, StructuralView rule) -> RuleMatchResult
 {
-  auto condition_result = try_match_combinator_seq_base(ctx, rule, {0, 1});
-
-  if (!condition_result.success) {
-    return {false};
-  }
-
-  return try_match_combinator_must_base(ctx, rule, {1});
-}
-
-static auto try_match_combinator_seq_base(MatcherContext ctx, StructuralView rule, ChildrenRange children_range)
-  -> RuleMatchResult
-{
   auto restore_point = ctx.state.create_restore_point();
 
   auto should_capture = rule.kind().is_captured();
@@ -411,13 +406,51 @@ static auto try_match_combinator_seq_base(MatcherContext ctx, StructuralView rul
     entry = ctx.begin_entry(rule);
   }
 
-  auto const max_child_index = children_range.to.value_or(rule.num_children());
+  auto const cond_match_settings = RuleMatchOptions{
+    .children_range     = {0, 1},
+    .force_skip_capture = true,
+  };
+  auto const condition_result = try_match_combinator_seq_base(ctx, rule, cond_match_settings);
+
+  if (!condition_result.success) {
+    if (should_capture) {
+      ctx.state.ast_builder.fail_current_entry();
+    }
+    ctx.state.restore(restore_point);
+    return {false};
+  }
+
+  auto const body_match_settings = RuleMatchOptions{
+    .children_range     = {1},
+    .force_skip_capture = true,
+  };
+  auto result = try_match_combinator_must_base(ctx, rule, body_match_settings);
+
+  if (result.success) {
+    ctx.state.ast_builder.finalize_entry(entry);
+  }
+
+  return result;
+}
+
+static auto try_match_combinator_seq_base(MatcherContext ctx, StructuralView rule, RuleMatchOptions const& match_options)
+  -> RuleMatchResult
+{
+  auto restore_point = ctx.state.create_restore_point();
+
+  auto should_capture = rule.kind().is_captured() && !match_options.force_skip_capture;
+  auto entry          = AST::EntryID();
+  if (should_capture) {
+    entry = ctx.begin_entry(rule);
+  }
+
+  auto const max_child_index = match_options.children_range.to.value_or(rule.num_children());
 
   auto child = rule.first_child();
 
   for (auto c = usize(0); c < max_child_index; ++c) {
 
-    if (c < children_range.from) {
+    if (c < match_options.children_range.from) {
       child = child.next_sibling();
       continue;
     }
